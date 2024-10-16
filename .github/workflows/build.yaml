@@ -1,0 +1,11 @@
+name: Build Charmed MongoDB rock
+
+on:
+  workflow_call:
+
+jobs:
+  build:
+    name: Build rock
+    uses: canonical/data-platform-workflows/.github/workflows/build_rock.yaml@feat/rockcraft-experimental-extensions 
+    with:
+      experimental-extensions: true

@@ -1,0 +1,13 @@
+# Copyright 2024 Canonical Ltd.
+# See LICENSE file for licensing details.
+name: kubernetes-mutator
+base: ubuntu@24.04
+version: '0.1'
+summary: Mutating Webhook for terminationGracePeriodSeconds
+description: |
+  This small fastapi application is a mutating webhook application to fix the
+  terminationGracePeriodSeconds issue on database charms being too low
+platforms:
+    amd64:
+extensions:
+    - fastapi-framework
