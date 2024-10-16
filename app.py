@@ -57,7 +57,7 @@ def admission_validation(uid: str, current_value: int):
                 "allowed": False,
                 "status": {
                     "code": 403,
-                    "message": "You cannot do this because it is Tuesday and your name starts with A",
+                    "message": f"Termination period lower than 30s is not allowed (given {current_value})",
                 },
             },
         }
