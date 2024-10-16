@@ -5,8 +5,10 @@ import logging
 import base64
 import json
 from pydantic import BaseModel
+import os
 
-YEAR = 31_556_952
+# Default to 1 year
+GRACE_PERIOD: int = os.getenv("GRACE_PERIOD_SECONDS", 31_556_952)
 
 
 class Patch(BaseModel):
@@ -27,7 +29,7 @@ def patch_termination(existing_selector: bool) -> base64:
     patch_operations = [
         Patch(
             op="replace" if existing_selector else "add",
-            value={"terminationGracePeriodSeconds": YEAR},
+            value={"terminationGracePeriodSeconds": GRACE_PERIOD},
         ).model_dump()
     ]
     return base64.b64encode(json.dumps(patch_operations).encode())
