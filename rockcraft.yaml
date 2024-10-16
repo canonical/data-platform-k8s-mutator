@@ -1,6 +1,6 @@
 # Copyright 2024 Canonical Ltd.
 # See LICENSE file for licensing details.
-name: kubernetes-mutator
+name: data-platform-k8s-mutator
 base: ubuntu@24.04
 version: '0.1'
 summary: Mutating Webhook for terminationGracePeriodSeconds

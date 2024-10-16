@@ -68,16 +68,16 @@ jobs:
           sudo skopeo \
               --insecure-policy \
               copy \
-              oci-archive:charmed-mongodb_${full_version}_amd64.rock \
-              docker-daemon:ghcr.io/canonical/charmed-mongodb:${major_tag_version}
-          docker push ghcr.io/canonical/charmed-mongodb:${major_tag_version}
+              oci-archive:data-platform-k8s-mutator${full_version}_amd64.rock \
+              docker-daemon:ghcr.io/canonical/data-platform-k8s-mutator:${major_tag_version}
+          docker push ghcr.io/canonical/data-platform-k8s-mutator:${major_tag_version}
 
           ### push full version to edge
           tag_version="${version}-${base}_${{ env.RELEASE }}"
-          echo "Publishing charmed-mongodb:${tag_version}"
+          echo "Publishing data-platform-k8s-mutator:${tag_version}"
           sudo skopeo \
               --insecure-policy \
               copy \
-              oci-archive:charmed-mongodb_${full_version}_amd64.rock \
-              docker-daemon:ghcr.io/canonical/charmed-mongodb:${tag_version}
-          docker push ghcr.io/canonical/charmed-mongodb:${tag_version}
+              oci-archive:data_platform_k8s_mutator_${full_version}_amd64.rock \
+              docker-daemon:ghcr.io/canonical/data-platform-k8s-mutator:${tag_version}
+          docker push ghcr.io/canonical/data-platform-k8s-mutator:${tag_version}
