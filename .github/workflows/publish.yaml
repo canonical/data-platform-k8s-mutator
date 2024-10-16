@@ -68,7 +68,7 @@ jobs:
           sudo skopeo \
               --insecure-policy \
               copy \
-              oci-archive:data-platform-k8s-mutator${full_version}_amd64.rock \
+              oci-archive:data-platform-k8s-mutator_${full_version}_amd64.rock \
               docker-daemon:ghcr.io/canonical/data-platform-k8s-mutator:${major_tag_version}
           docker push ghcr.io/canonical/data-platform-k8s-mutator:${major_tag_version}
 
@@ -78,6 +78,6 @@ jobs:
           sudo skopeo \
               --insecure-policy \
               copy \
-              oci-archive:data_platform_k8s_mutator_${full_version}_amd64.rock \
+              oci-archive:data-platform-k8s-mutator_${full_version}_amd64.rock \
               docker-daemon:ghcr.io/canonical/data-platform-k8s-mutator:${tag_version}
           docker push ghcr.io/canonical/data-platform-k8s-mutator:${tag_version}
