@@ -67,7 +67,9 @@ def admission_validation(uid: str, current_value: int):
         "response": {
             "uid": uid,
             "allowed": True,
-            "status": {f"Valid value has been provided ({current_value}s)"},
+            "status": {
+                "message": f"Valid value has been provided ({current_value}s)"
+            },
         },
     }
 
