@@ -3,7 +3,10 @@ on: workflow_dispatch
 
 jobs:
   build:
-    uses: ./.github/workflows/build.yaml
+    name: Build rock
+    uses: canonical/data-platform-workflows/.github/workflows/build_rock.yaml@feat/rockcraft-experimental-extensions
+    with:
+      experimental-extensions: true
   publish:
     needs: build
     runs-on: [self-hosted, linux, X64, jammy, large]
