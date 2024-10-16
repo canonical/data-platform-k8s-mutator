@@ -1,4 +1,4 @@
-name: Build Charmed MongoDB rock
+name: Build Data Platform Kubernetes Mutator rock
 
 on:
   workflow_call:
