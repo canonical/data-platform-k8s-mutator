@@ -3,12 +3,12 @@
 from fastapi import FastAPI, Body
 import logging
 import base64
-import json
-from pydantic import BaseModel
+from pydantic import BaseModel, TypeAdapter
 import os
 
 # Default to 1 year
-GRACE_PERIOD: int = os.getenv("GRACE_PERIOD_SECONDS", 31_556_952)
+YEAR = 31_556_952
+GRACE_PERIOD: int = os.getenv("GRACE_PERIOD_SECONDS", YEAR)
 
 
 class Patch(BaseModel):
@@ -23,40 +23,30 @@ webhook = logging.getLogger(__name__)
 webhook.setLevel(logging.INFO)
 logging.basicConfig(format="[%(asctime)s] %(levelname)s: %(message)s")
 
+ADAPTER = TypeAdapter(list[Patch])
 
-def patch_termination() -> str:
+
+def patch_termination(existing_value: bool) -> str:
     webhook.info("Updating terminationGracePeriodSeconds, replacing it.")
     patch_operations = [
         Patch(
-            op="replace",
+            op="replace" if existing_value else "add",
             value={"terminationGracePeriodSeconds": GRACE_PERIOD},
-        ).model_dump()
+        )
     ]
-    return base64.b64encode(json.dumps(patch_operations).encode()).decode()
+    return base64.b64encode(ADAPTER.dump_json(patch_operations)).decode()
 
 
-def admission_review(uid: str, message: str, existing_selector: bool) -> dict:
-    if existing_selector:
-        return {
-            "apiVersion": "admission.k8s.io/v1",
-            "kind": "AdmissionReview",
-            "response": {
-                "uid": uid,
-                "allowed": True,
-                "patchType": "JSONPatch",
-                "status": {"message": message},
-                "patch": patch_termination(),
-            },
-        }
+def admission_review(uid: str, message: str, existing_value: bool) -> dict:
     return {
         "apiVersion": "admission.k8s.io/v1",
         "kind": "AdmissionReview",
         "response": {
             "uid": uid,
             "allowed": True,
-            "status": {
-                "message": "Not updating since no terminationGracePeriodSeconds in original message"
-            },
+            "patchType": "JSONPatch",
+            "status": {"message": message},
+            "patch": patch_termination(existing_value),
         },
     }
 
