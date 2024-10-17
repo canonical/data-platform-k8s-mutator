@@ -8,7 +8,7 @@ import os
 
 # Default to 1 year
 YEAR = 31_556_952
-GRACE_PERIOD: int = os.getenv("GRACE_PERIOD_SECONDS", YEAR)
+GRACE_PERIOD: int = int(os.getenv("GRACE_PERIOD_SECONDS", YEAR))
 
 
 class Patch(BaseModel):
