@@ -1,5 +1,6 @@
 # Copyright 2024 Canonical Ltd.
 # See LICENSE file for licensing details.
+from typing import Any
 from fastapi import FastAPI, Body
 import logging
 import base64
@@ -13,8 +14,8 @@ GRACE_PERIOD: int = int(os.getenv("GRACE_PERIOD_SECONDS", YEAR))
 
 class Patch(BaseModel):
     op: str
-    path: str = "/spec/template/spec"
-    value: dict[str, int]
+    path: str = "/spec/template/spec/terminationGracePeriodSeconds"
+    value: int
 
 
 app = FastAPI()
@@ -31,7 +32,7 @@ def patch_termination(existing_value: bool) -> str:
     patch_operations = [
         Patch(
             op="replace" if existing_value else "add",
-            value={"terminationGracePeriodSeconds": GRACE_PERIOD},
+            value=GRACE_PERIOD,
         )
     ]
     return base64.b64encode(ADAPTER.dump_json(patch_operations)).decode()

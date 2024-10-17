@@ -2,3 +2,4 @@
 # See LICENSE file for licensing details.
 pydantic>=2.0,<3.0
 fastapi[standard]
+uvicorn
