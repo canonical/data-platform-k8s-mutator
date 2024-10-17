@@ -24,43 +24,28 @@ webhook.setLevel(logging.INFO)
 logging.basicConfig(format="[%(asctime)s] %(levelname)s: %(message)s")
 
 
-def patch_termination(existing_selector: bool) -> base64:
+def patch_termination() -> str:
     webhook.info("Updating terminationGracePeriodSeconds, replacing it.")
     patch_operations = [
         Patch(
-            op="replace" if existing_selector else "add",
+            op="replace",
             value={"terminationGracePeriodSeconds": GRACE_PERIOD},
         ).model_dump()
     ]
-    return base64.b64encode(json.dumps(patch_operations).encode())
+    return base64.b64encode(json.dumps(patch_operations).encode()).decode()
 
 
 def admission_review(uid: str, message: str, existing_selector: bool) -> dict:
-    return {
-        "apiVersion": "admission.k8s.io/v1",
-        "kind": "AdmissionReview",
-        "response": {
-            "uid": uid,
-            "allowed": True,
-            "patchType": "JSONPatch",
-            "status": {"message": message},
-            "patch": patch_termination(existing_selector).decode(),
-        },
-    }
-
-
-def admission_validation(uid: str, current_value: int):
-    if current_value < 31:
+    if existing_selector:
         return {
             "apiVersion": "admission.k8s.io/v1",
             "kind": "AdmissionReview",
             "response": {
                 "uid": uid,
-                "allowed": False,
-                "status": {
-                    "code": 403,
-                    "message": f"Termination period lower than 30s is not allowed (given {current_value})",
-                },
+                "allowed": True,
+                "patchType": "JSONPatch",
+                "status": {"message": message},
+                "patch": patch_termination(),
             },
         }
     return {
@@ -70,7 +55,34 @@ def admission_validation(uid: str, current_value: int):
             "uid": uid,
             "allowed": True,
             "status": {
-                "message": f"Valid value has been provided ({current_value}s)"
+                "message": "Not updating since no terminationGracePeriodSeconds in original message"
+            },
+        },
+    }
+
+
+def admission_validation(uid: str, current_value: int | None):
+    if not current_value or current_value > 30:
+        return {
+            "apiVersion": "admission.k8s.io/v1",
+            "kind": "AdmissionReview",
+            "response": {
+                "uid": uid,
+                "allowed": True,
+                "status": {
+                    "message": f"Valid value has been provided ({current_value})"
+                },
+            },
+        }
+    return {
+        "apiVersion": "admission.k8s.io/v1",
+        "kind": "AdmissionReview",
+        "response": {
+            "uid": uid,
+            "allowed": False,
+            "status": {
+                "code": 403,
+                "message": f"Termination period lower than 30s is not allowed (given {current_value})",
             },
         },
     }
@@ -92,6 +104,6 @@ def mutate_request(request: dict = Body(...)):
 def validate_request(request: dict = Body(...)):
     uid = request["request"]["uid"]
     selector = request["request"]["object"]["spec"]["template"]["spec"]
-    period_value = int(selector["terminationGracePeriodSeconds"])
+    period_value = selector.get("terminationGracePeriodSeconds")
 
     return admission_validation(uid, period_value)
