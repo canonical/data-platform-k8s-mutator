@@ -28,10 +28,11 @@ ADAPTER = TypeAdapter(list[Patch])
 
 
 def patch_termination(existing_value: bool) -> str:
-    webhook.info("Updating terminationGracePeriodSeconds, replacing it.")
+    op = "replace" if existing_value else "add"
+    webhook.info(f"Updating terminationGracePeriodSeconds, replacing it ({op = })")
     patch_operations = [
         Patch(
-            op="replace" if existing_value else "add",
+            op=op,
             value=GRACE_PERIOD,
         )
     ]
@@ -39,15 +40,25 @@ def patch_termination(existing_value: bool) -> str:
 
 
 def admission_review(uid: str, message: str, existing_value: bool) -> dict:
+    if existing_value:
+        return {
+            "apiVersion": "admission.k8s.io/v1",
+            "kind": "AdmissionReview",
+            "response": {
+                "uid": uid,
+                "allowed": True,
+                "patchType": "JSONPatch",
+                "status": {"message": message},
+                "patch": patch_termination(existing_value),
+            },
+        }
     return {
         "apiVersion": "admission.k8s.io/v1",
         "kind": "AdmissionReview",
         "response": {
             "uid": uid,
             "allowed": True,
-            "patchType": "JSONPatch",
-            "status": {"message": message},
-            "patch": patch_termination(existing_value),
+            "status": {"message": "No value provided, continue."},
         },
     }
 
