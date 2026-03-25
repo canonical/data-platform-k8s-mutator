@@ -1,5 +1,5 @@
-# Copyright 2024 Canonical Ltd.
-# See LICENSE file for licensing details.
+# Runtime dependencies for the webhook app. Managed by pyproject.toml; this file exists for rockcraft fastapi-framework extension.
 pydantic>=2.0,<3.0
+pydantic-settings>=2.0,<3.0
 fastapi[standard]
 uvicorn

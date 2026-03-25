@@ -1,0 +1,2 @@
+# Normalize line endings so ruff format is consistent (CI and local).
+*.py text eol=lf

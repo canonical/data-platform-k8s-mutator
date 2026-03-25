@@ -1,0 +1,11 @@
+# See https://pre-commit.com for usage.
+# Install: pre-commit install
+# Run manually: pre-commit run --all-files
+# Ruff config (extend-ignore D, E501) is in pyproject.toml.
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.15.6
+    hooks:
+      - id: ruff
+        args: [--fix]
+        files: ^(app\.py|scripts/.*\.py)$

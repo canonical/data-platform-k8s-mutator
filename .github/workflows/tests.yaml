@@ -1,0 +1,86 @@
+name: Tests
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+on:
+  pull_request:
+  workflow_call:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: [self-hosted, linux, X64, jammy, large]
+    timeout-minutes: 10
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Install tox
+        run: python3 -m pip install tox
+      - name: Unit tests
+        run: tox -e unit
+      - name: Integration tests
+        run: tox -e integration
+
+  integration-k8s:
+    name: E2E on MicroK8s
+    runs-on: [self-hosted, linux, X64, jammy, large]
+    timeout-minutes: 15
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Install MicroK8s
+        run: |
+          sudo snap install microk8s --classic
+          sudo microk8s status --wait-ready
+      - name: Set up kubeconfig
+        run: |
+          mkdir -p ~/.kube
+          sudo microk8s config > ~/.kube/config
+          sudo chown "$USER:$USER" ~/.kube/config
+          echo "KUBECONFIG=$HOME/.kube/config" >> "$GITHUB_ENV"
+      - name: Install kubectl
+        run: sudo snap install kubectl --classic
+      - name: Enable MicroK8s local registry
+        run: |
+          sudo microk8s enable registry
+          kubectl wait --for=condition=ready pod -l app=registry -n container-registry --timeout=120s 2>/dev/null || true
+          sleep 5
+      - name: Install rockcraft, skopeo and LXD
+        run: |
+          sudo snap install rockcraft --classic --channel latest/edge
+          sudo snap install lxd
+          sudo lxd init --auto
+          sudo apt-get update && sudo apt-get install -y skopeo uidmap
+      - name: Build webhook image with rockcraft
+        run: rockcraft pack
+        env:
+          ROCKCRAFT_ENABLE_EXPERIMENTAL_EXTENSIONS: "true"
+      - name: Push image to MicroK8s local registry
+        run: |
+          ROCK="$(ls ./*.rock 2>/dev/null || true)"
+          if [ -z "$ROCK" ]; then ROCK="$(ls build/*.rock 2>/dev/null || true)"; fi
+          skopeo copy --insecure-policy "oci-archive:${ROCK}" "docker://localhost:32000/sysctl-webhook:e2e" --dest-tls-verify=false
+      - name: Install python3-venv
+        run: sudo apt-get update && sudo apt-get install -y python3-venv
+      - name: Create venv and install deps
+        run: |
+          python3 -m venv .venv
+          echo "PATH=$GITHUB_WORKSPACE/.venv/bin:$PATH" >> "$GITHUB_ENV"
+          .venv/bin/pip install --upgrade pip setuptools wheel
+          .venv/bin/pip install -e .
+      - name: Bootstrap webhook
+        run: |
+          python3 -m scripts.bootstrap_webhook \
+            --image localhost:32000/sysctl-webhook:e2e \
+            --namespace default \
+            --target-container-names app \
+            --target-labels "app.kubernetes.io/managed-by=juju" \
+            --target-namespaces default
+      - name: Wait for webhook
+        run: kubectl rollout status deployment/sysctl-webhook -n default --timeout=120s
+      - name: Wait for webhook to accept connections
+        run: sleep 15
+      - name: Run cluster e2e
+        run: python3 -m integration.cluster.run_e2e
