@@ -1,5 +1,5 @@
 # Runtime dependencies for the webhook app. Managed by pyproject.toml; this file exists for rockcraft fastapi-framework extension.
 pydantic>=2.0,<3.0
-pydantic-settings>=2.0,<3.0
+pydantic-settings>=2.14.2,<3.0
 fastapi[standard]
 uvicorn
