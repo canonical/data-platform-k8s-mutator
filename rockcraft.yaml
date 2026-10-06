@@ -10,5 +10,6 @@ description: |
   Kubernetes workloads at admission time.
 platforms:
   amd64:
+  arm64:
 extensions:
   - fastapi-framework

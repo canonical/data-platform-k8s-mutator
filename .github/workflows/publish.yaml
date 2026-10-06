@@ -1,8 +1,5 @@
 name: Publish to GHCR
 
-env:
-  RELEASE: edge
-
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -16,68 +13,17 @@ on:
 jobs:
   build:
     name: Build rock
-    uses: canonical/data-platform-workflows/.github/workflows/build_rock.yaml@feat/rockcraft-experimental-extensions
+    uses: canonical/data-platform-workflows/.github/workflows/build_rock.yaml@v49.0.2
+    permissions:
+      contents: read
+
+  release:
+    name: Release rock
+    needs:
+      - build
+    uses: canonical/data-platform-workflows/.github/workflows/build_rock.yaml@v49.0.2
     with:
-      experimental-extensions: true
-
-  publish:
-    needs: build
-    name: publish
-    runs-on: [self-hosted, linux, X64, jammy, large]
-    timeout-minutes: 15
-    steps:
-      - name: Checkout repo
-        uses: actions/checkout@v3
-
-      - name: Install required dependencies
-        run: |
-          # docker
-          sudo snap install docker
-          sudo addgroup --system docker; sudo adduser $USER docker
-          newgrp docker
-          sudo snap disable docker; sudo snap enable docker
-
-          # skopeo
-          sudo snap install --devmode --channel edge skopeo
-
-          # yq
-          sudo snap install yq
-
-      - name: Download rock package(s)
-        uses: actions/download-artifact@v4
-        with:
-          pattern: ${{ needs.build.outputs.artifact-prefix }}-*
-          merge-multiple: true
-
-      - name: Login to GitHub Container Registry
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Publish rock to Store
-        run: |
-          full_version="$(cat rockcraft.yaml | yq .version)"
-          version="${full_version%-*}"
-          base="$(cat rockcraft.yaml | yq .base)"
-          base="${base#*@}"
-
-          # push major version to edge
-          major_tag_version="${version%%.*}-${{ env.RELEASE }}"
-          sudo skopeo \
-              --insecure-policy \
-              copy \
-              oci-archive:data-platform-k8s-mutator_${full_version}_amd64.rock \
-              docker-daemon:ghcr.io/canonical/data-platform-k8s-mutator:${major_tag_version}
-          docker push ghcr.io/canonical/data-platform-k8s-mutator:${major_tag_version}
-
-          ### push full version to edge
-          tag_version="${version}-${base}_${{ env.RELEASE }}"
-          echo "Publishing data-platform-k8s-mutator:${tag_version}"
-          sudo skopeo \
-              --insecure-policy \
-              copy \
-              oci-archive:data-platform-k8s-mutator_${full_version}_amd64.rock \
-              docker-daemon:ghcr.io/canonical/data-platform-k8s-mutator:${tag_version}
-          docker push ghcr.io/canonical/data-platform-k8s-mutator:${tag_version}
+      artifact-prefix: ${{ needs.build.outputs.artifact-prefix }}
+    permissions:
+      packages: write  # Needed to publish to GitHub Container Registry
+      contents: write  # Needed to create git tags
