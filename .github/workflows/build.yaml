@@ -6,7 +6,7 @@ on:
 jobs:
   build:
     name: Build rock
-    uses: canonical/data-platform-workflows/.github/workflows/build_rock.yaml@v49.0.2
+    uses: canonical/data-platform-workflows/.github/workflows/build_rock.yaml@v53.0.0
     permissions:
       contents: read
       actions: read
